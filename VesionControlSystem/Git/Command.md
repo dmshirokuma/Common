@@ -57,9 +57,45 @@ git config --global user.email [設定する情報]
 git config --system user.email [設定する情報]
 ```
 
-### コミットした変更を取り消す（コミット直前に戻す）
+### ブランチ一覧を表示（ローカルブランチのみ）
+```
+git branch
+```
+
+#### ブランチ一覧を表示（リモートブランチ含む）
+```
+git branch -a
+```
+
+#### ブランチを削除（ローカルブランチ）
+```
+git branch -D [ローカルブランチ名]
+```
+
+### ブランチに移動
+```
+git checkout [ローカルブランチ名]
+```
+
+#### 現在のブランチを元にして新規ブランチを作成して移動
+```
+git checkout -b [ローカルブランチ名]
+```
+
+### 特定のコミットの状態を取得する
+```
+git log //対象のコミットIDを確認
+git checkout [コミットID]
+```
+
+### 直前にコミットした変更を取り消す（コミット直前に戻す）
 ```
 git reset --soft HEAD^
+```
+
+### 直前にコミットした変更を取り消す（完全取り消し）
+```
+git reset --hard HEAD^
 ```
 
 ### コミット履歴を確認する
@@ -71,3 +107,89 @@ git log
 ```
 git log -[件数]
 ```
+
+### ブランチの内容をマージ
+```
+git checkout [マージ先ローカルブランチ名] //マージ先ブランチに移動
+git merge [マージ元のローカルブランチ名] //マージ元の内容をマージ先に取り込み
+
+ex. 「main」ブランチに「feature/xxx」の内容をマージしたい場合
+git checkout main
+git merge feature/xxx
+```
+
+### リベース
+```
+git checkout [変更を取り込みたいブランチ]
+git pull // 変更を取り込みたいブランチを最新化
+git checkout [リベースしたいブランチ]
+git pull // リベースしたいブランチを最新化
+git rebase [変更を取り込みたいブランチ]
+
+ex masterの内容をfeature/xxxブランチに取り込んでリベースしたい場合
+git checkout master
+git pull // 「master」を最新化
+git checkout feature/xxx
+git pull // 「feature/xxx」ブランチを最新化
+git rebase master //「master」の内容を「feature/xxx」ブランチに取り込んでリベース
+```
+
+### 現在のローカルブランチの内容をリモートブランチに反映
+```
+git push --force-with-lease
+
+※「git push -f」を使う方法もあるが、リモートブランチを強制的に上書きしてしまうため、自分以外の誰かがpushしていた場合にその変更が消えてしまう。
+そのため、基本的には使ってはいけない。
+
+「git push --force-with-lease」を使用することによってローカルブランチの履歴がリモートブランチの履歴より
+新しい場合のみ上書きするためこちらを使用する。
+```
+
+### 複数コミットをまとめる
+
+ローカルで作業をしていると同じ作業に対して複数のコミットが発生し、そのままリモートブランチに反映してしまうと
+リモートブランチのコミット履歴が複雑になってしまう。
+そのため複数のコミットを１つにまとめたコミットを作成し、リモートブランチにpushする。
+この操作をsquashという。
+
+ ```
+ git log //まとめたいコミットを確認
+ git rebase -i HEAD^[まとめたいコミット数] //このコマンドの場合はHEADからまとめる
+ ```
+
+ エディタが起動するので対応する //squashしたいコミットを選択する
+
+ ex.
+
+```
+pick 7c65355 xxx対応
+pick 2639543 追加対応
+```
+
+のような感じで表示されるので「追加対応」を「xxx対応」としてまとめたい場合は↓のようにエディタで修正する
+
+```
+pick 7c65355 xxx対応
+squash 2639543 追加対応
+```
+
+エディタを閉じる
+
+再度エディタが起動するので次はどのコミットメッセージをまとめたコミットに採用するかを決める
+```
+# This is a combination of 2 commits.
+# The first commit's message is:
+xxx対応
+# This is the 2nd commit message:
+追加対応
+```
+「xxx対応」をコミットメッセージとして採用したい場合は↓のように不要なメッセージを削除して保存後、エディタを閉じる
+```
+# This is a combination of 2 commits.
+# The first commit's message is:
+xxx対応
+```
+
+まとめ終わったら「git log」で問題ないことを確認し、
+「git push --force-with-lease」でリモートブランチに反映する。
+（新しいコミットとなるがまとめられたコミットは無かったことになる（厳密には無くなっていないが）ため、強制的にリモートに反映させる必要がある）
